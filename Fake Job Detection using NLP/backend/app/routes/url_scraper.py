@@ -23,6 +23,14 @@ HEADERS = {
 
 def _scrape_job_text(url: str) -> dict:
     """Fetch a URL and extract the main text content."""
+    import urllib.parse
+    parsed = urllib.parse.urlparse(url)
+    if "linkedin.com" in parsed.netloc and "currentJobId" in parsed.query:
+        qs = urllib.parse.parse_qs(parsed.query)
+        if "currentJobId" in qs:
+            job_id = qs["currentJobId"][0]
+            url = f"https://www.linkedin.com/jobs/view/{job_id}"
+
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15, allow_redirects=True)
         resp.raise_for_status()
