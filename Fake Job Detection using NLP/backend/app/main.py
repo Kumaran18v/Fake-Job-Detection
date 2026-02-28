@@ -14,6 +14,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import init_db
 from app.routes import predict, stats, flag, retrain
+from app.routes import url_scraper, bulk, feedback, company_verify
+from app.routes import user_stats, trending, ocr
 from app.routes.auth_routes import router as auth_router
 
 
@@ -35,14 +37,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="JobCheck - Fake Job Detection API",
     description="AI-powered fake job posting detection platform",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan
 )
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,6 +56,13 @@ app.include_router(predict.router, prefix="/api", tags=["Prediction"])
 app.include_router(stats.router, prefix="/api", tags=["Stats"])
 app.include_router(flag.router, prefix="/api", tags=["Flagging"])
 app.include_router(retrain.router, prefix="/api", tags=["Retrain"])
+app.include_router(url_scraper.router, prefix="/api", tags=["URL Scanner"])
+app.include_router(bulk.router, prefix="/api", tags=["Bulk Analysis"])
+app.include_router(feedback.router, prefix="/api", tags=["Feedback"])
+app.include_router(company_verify.router, prefix="/api", tags=["Company Verification"])
+app.include_router(user_stats.router, prefix="/api", tags=["User Stats"])
+app.include_router(trending.router, prefix="/api", tags=["Trending"])
+app.include_router(ocr.router, prefix="/api", tags=["OCR"])
 
 
 @app.get("/", tags=["Health"])

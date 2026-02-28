@@ -227,6 +227,7 @@ def train_pipeline():
     joblib.dump(best_model, model_path)
     joblib.dump(tfidf, tfidf_path)
     
+    from datetime import timezone
     metadata = {
         "version": version,
         "model_name": best['model'],
@@ -234,7 +235,7 @@ def train_pipeline():
         "precision": best['precision'],
         "recall": best['recall'],
         "f1_score": best['f1_score'],
-        "trained_at": datetime.now().isoformat(),
+        "trained_at": datetime.now(timezone.utc).isoformat(),
         "dataset_size": len(df),
         "features": "TF-IDF (max_features=10000, ngram_range=(1,2))",
         "all_results": results

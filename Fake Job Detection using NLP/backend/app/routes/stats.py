@@ -48,11 +48,37 @@ async def get_stats(db: Session = Depends(get_db)):
     daily_stats = sorted(daily_map.values(), key=lambda x: x["date"])
     
     # Model info
-    model_info = None
+    model_info = {}
     meta_path = os.path.join(MODEL_DIR, 'model_metadata.json')
     if os.path.exists(meta_path):
         with open(meta_path) as f:
             model_info = json.load(f)
+
+    # ── Feature 10: A/B Test Stats ──
+    try:
+        from sqlalchemy import case
+        ab_stats = db.query(
+            Prediction.model_used,
+            func.count(Prediction.id).label('count'),
+            func.avg(Prediction.confidence).label('avg_conf'),
+            func.sum(case((Prediction.prediction == 'Fake', 1), else_=0)).label('fake_count')
+        ).group_by(Prediction.model_used).all()
+
+        ab_results = []
+        for m in ab_stats:
+            model_name = m.model_used or 'model_a'
+            total = m.count
+            fake = int(m.fake_count or 0)
+            ab_results.append({
+                 "model": model_name,
+                 "total_predictions": total,
+                 "fake_percentage": round((fake / total * 100), 1) if total > 0 else 0,
+                 "avg_confidence": round(float(m.avg_conf or 0) * 100, 1)
+            })
+        model_info['ab_test_results'] = ab_results
+    except Exception as e:
+        print(f"Error aggregaring A/B stats: {e}")
+        model_info['ab_test_error'] = str(e)
     
     return {
         "total_predictions": total_predictions,

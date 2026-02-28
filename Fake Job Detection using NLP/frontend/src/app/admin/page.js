@@ -104,8 +104,8 @@ export default function AdminPage() {
         try {
             const headers = { Authorization: `Bearer ${token}` };
             const [statsRes, predRes] = await Promise.all([
-                fetch('http://localhost:8000/api/stats', { headers }),
-                fetch('http://localhost:8000/api/predictions', { headers }),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stats`, { headers }),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/predictions`, { headers }),
             ]);
             const statsData = await statsRes.json();
             const predData = await predRes.json();
@@ -122,7 +122,7 @@ export default function AdminPage() {
         if (!confirm('Retrain the model? This may take a few minutes.')) return;
         setRetraining(true);
         try {
-            await fetch('http://localhost:8000/api/retrain', {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/retrain`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -468,6 +468,43 @@ export default function AdminPage() {
                                             color: 'var(--off-white)',
                                         }}>
                                             {v}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══ A/B TEST RESULTS ═══ */}
+                    {stats?.model_info?.ab_test_results?.length > 0 && (
+                        <div style={{
+                            background: 'var(--charcoal)',
+                            border: '1px solid var(--charcoal-lighter)',
+                            padding: '28px 24px',
+                            marginBottom: 48,
+                        }}>
+                            <div className="mono" style={{ fontSize: '0.6rem', marginBottom: 20, letterSpacing: '0.1em', color: '#38bdf8' }}>
+                                ■ A/B TEST PERFORMANCE
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
+                                {stats.model_info.ab_test_results.map((m, i) => (
+                                    <div key={i} style={{ padding: 16, border: '1px solid var(--charcoal-lighter)', background: 'var(--charcoal-light)' }}>
+                                        <div className="mono" style={{ fontSize: '0.7rem', color: 'var(--off-white)', marginBottom: 12 }}>
+                                            {m.model.toUpperCase().replace('_', ' ')}
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span className="mono" style={{ fontSize: '0.55rem', color: 'var(--bone-muted)' }}>VOLUME</span>
+                                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--off-white)' }}>{m.total_predictions}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span className="mono" style={{ fontSize: '0.55rem', color: 'var(--bone-muted)' }}>FRAUD RATE</span>
+                                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--red)' }}>{m.fake_percentage}%</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span className="mono" style={{ fontSize: '0.55rem', color: 'var(--bone-muted)' }}>AVG CONF.</span>
+                                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--teal)' }}>{m.avg_confidence}%</span>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

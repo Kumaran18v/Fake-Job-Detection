@@ -36,6 +36,29 @@
 
     /* Grain */
     --grain-opacity: 0.03;
+
+    /* Nav */
+    --nav-bg: rgba(26, 26, 26, 0.95);
+  }
+
+  /* ═══ LIGHT THEME ═══ */
+  [data-theme="light"] {
+    --black: #f5f2ed;
+    --charcoal: #ffffff;
+    --charcoal-warm: #f7f4ef;
+    --charcoal-light: #ede9e2;
+    --charcoal-lighter: #d6d0c7;
+    --bone: #3a3530;
+    --bone-dim: #5a544d;
+    --bone-muted: #8a8278;
+    --off-white: #1a1815;
+    --red-dim: rgba(230, 57, 70, 0.12);
+    --red-glow: rgba(230, 57, 70, 0.06);
+    --teal-dim: rgba(95, 158, 160, 0.12);
+    --teal-glow: rgba(95, 158, 160, 0.06);
+    --green-dim: rgba(74, 158, 110, 0.12);
+    --grain-opacity: 0.015;
+    --nav-bg: rgba(247, 244, 239, 0.95);
   }
 }
 

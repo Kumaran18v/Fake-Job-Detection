@@ -93,7 +93,7 @@ export default function HomePage() {
           <h1 style={{
             fontSize: 'clamp(3.5rem, 10vw, 8rem)',
             lineHeight: 0.9,
-            color: 'var(--off-white)',
+            color: '#f0ebe3',
             marginBottom: 32,
             opacity: loaded ? 1 : 0,
             transform: loaded ? 'none' : 'translateY(20px)',
@@ -109,7 +109,7 @@ export default function HomePage() {
             fontSize: 'clamp(1rem, 2vw, 1.15rem)',
             fontWeight: 300,
             lineHeight: 1.6,
-            color: 'var(--bone-dim)',
+            color: '#b8b0a4',
             maxWidth: 520,
             marginBottom: 48,
             opacity: loaded ? 1 : 0,
@@ -132,7 +132,7 @@ export default function HomePage() {
             <Link href="/analyze" className="btn-primary" style={{ textDecoration: 'none' }}>
               ANALYZE A JOB POST
             </Link>
-            <span className="mono" style={{ color: 'var(--bone-muted)' }}>—</span>
+            <span className="mono" style={{ color: '#8a8278' }}>—</span>
             <span className="mono">FREE • INSTANT • NO SIGNUP REQUIRED</span>
           </div>
         </div>

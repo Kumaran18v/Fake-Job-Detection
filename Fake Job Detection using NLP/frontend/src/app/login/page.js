@@ -73,7 +73,7 @@ export default function LoginPage() {
                                 fontFamily: 'var(--font-display)',
                                 fontSize: '1.3rem',
                                 letterSpacing: '0.1em',
-                                color: 'var(--off-white)',
+                                color: '#f0ebe3',
                             }}>
                                 JOBCHECK
                             </span>
@@ -82,7 +82,7 @@ export default function LoginPage() {
                         <h1 style={{
                             fontFamily: 'var(--font-display)',
                             fontSize: 'clamp(2.5rem, 6vw, 3.5rem)',
-                            color: 'var(--off-white)',
+                            color: '#f0ebe3',
                             lineHeight: 0.95,
                             marginBottom: 12,
                         }}>
@@ -92,7 +92,7 @@ export default function LoginPage() {
                             fontFamily: 'var(--font-body)',
                             fontSize: '0.88rem',
                             fontWeight: 300,
-                            color: 'var(--bone-muted)',
+                            color: '#b8b0a4',
                             lineHeight: 1.5,
                         }}>
                             Authenticate to access the fraud detection system.
@@ -121,6 +121,7 @@ export default function LoginPage() {
                                 marginBottom: 8,
                                 fontSize: '0.68rem',
                                 letterSpacing: '0.1em',
+                                color: '#b8b0a4',
                             }}>
                                 USERNAME
                             </label>
@@ -140,6 +141,7 @@ export default function LoginPage() {
                                 marginBottom: 8,
                                 fontSize: '0.68rem',
                                 letterSpacing: '0.1em',
+                                color: '#b8b0a4',
                             }}>
                                 PASSWORD
                             </label>
@@ -164,7 +166,7 @@ export default function LoginPage() {
                                         border: 'none',
                                         fontFamily: 'var(--font-mono)',
                                         fontSize: '0.65rem',
-                                        color: 'var(--bone-muted)',
+                                        color: '#8a8278',
                                         cursor: 'pointer',
                                         letterSpacing: '0.06em',
                                     }}
@@ -193,12 +195,12 @@ export default function LoginPage() {
                         <p style={{
                             fontFamily: 'var(--font-body)',
                             fontSize: '0.82rem',
-                            color: 'var(--bone-muted)',
+                            color: '#b8b0a4',
                             fontWeight: 300,
                         }}>
                             Need an account?{' '}
                             <Link href="/register" style={{
-                                color: 'var(--off-white)',
+                                color: '#f0ebe3',
                                 textDecoration: 'none',
                                 borderBottom: '1px solid var(--red)',
                                 paddingBottom: 1,
@@ -207,6 +209,20 @@ export default function LoginPage() {
                                 Request access
                             </Link>
                         </p>
+                        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+                            <Link href="/" style={{
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '0.75rem',
+                                color: '#8a8278',
+                                textDecoration: 'none',
+                                letterSpacing: '0.05em',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                            }}>
+                                ← BACK TO HOME
+                            </Link>
+                        </div>
                     </div>
                 </div>
 

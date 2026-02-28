@@ -29,6 +29,7 @@ class Prediction(Base):
     job_text = Column(Text, nullable=False)
     prediction = Column(String(10), nullable=False)  # "Real" or "Fake"
     confidence = Column(Float, nullable=False)
+    model_used = Column(String(50), default="model_a")
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", back_populates="predictions")
@@ -61,3 +62,17 @@ class ModelVersion(Base):
     is_active = Column(Boolean, default=True)
     trained_by = Column(String(50), default="system")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserFeedback(Base):
+    __tablename__ = "user_feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    prediction_id = Column(Integer, ForeignKey("predictions.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    feedback = Column(String(20), nullable=False)  # "agree" or "disagree"
+    correct_label = Column(String(20), default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    prediction = relationship("Prediction")
+    user = relationship("User")

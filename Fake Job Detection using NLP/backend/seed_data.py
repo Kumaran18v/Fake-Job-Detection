@@ -26,7 +26,7 @@ def seed():
     if not admin:
         admin = User(
             username="admin",
-            email="admin@jobcheck.ai",
+            email="admin@jobcheck.com",
             password_hash=hash_password("admin123"),
             role="admin",
             created_at=datetime.now(timezone.utc)
@@ -42,7 +42,7 @@ def seed():
     if not demo:
         demo = User(
             username="demo",
-            email="demo@jobcheck.ai",
+            email="demo@jobcheck.com",
             password_hash=hash_password("demo123"),
             role="user",
             created_at=datetime.now(timezone.utc)
