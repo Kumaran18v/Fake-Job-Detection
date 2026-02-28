@@ -1,7 +1,7 @@
 """
 Pydantic schemas for request/response validation.
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -78,7 +78,7 @@ class StatsResponse(BaseModel):
     total_flagged: int
     daily_stats: List[dict]
     model_info: Optional[dict] = None
-    model_config = {'protected_namespaces': ()}
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ── Retrain Schemas ───────────────────────────────
@@ -88,4 +88,4 @@ class RetrainResponse(BaseModel):
     version: str
     accuracy: float
     f1_score: float
-    model_config = {'protected_namespaces': ()}
+    model_config = ConfigDict(protected_namespaces=())
