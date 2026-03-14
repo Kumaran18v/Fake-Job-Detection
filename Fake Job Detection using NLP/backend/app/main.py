@@ -27,9 +27,9 @@ async def lifespan(app: FastAPI):
     try:
         from app.routes.predict import get_model
         get_model()
-        print("✓ Model loaded successfully")
+        print("[OK] Model loaded successfully")
     except Exception as e:
-        print(f"⚠ Model not loaded: {e}")
+        print(f"[WARN] Model not loaded: {e}")
         print("  Run 'python ml/train.py' to train the model first.")
     yield
 
