@@ -34,22 +34,45 @@ export default function LoginPage() {
     };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--bg-primary)',
-            padding: '20px',
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '420px',
-                background: 'var(--bg-white)',
-                borderRadius: 'var(--radius-xl)',
-                boxShadow: 'var(--shadow-xl)',
-                padding: '40px',
-            }}>
+        <div className="login-page">
+            {/* Layer 2 — Color blobs */}
+            <div className="login-blob-blue" />
+            <div className="login-blob-teal" />
+            <div className="login-blob-red" />
+
+            {/* Layer 3 — Dot grid */}
+            <div className="login-dot-grid" />
+
+            {/* Layer 4 — Scan-line */}
+            <div className="login-scanline" />
+
+            {/* Layer 5 — Vignette */}
+            <div className="login-vignette" />
+
+            <div className="login-card">
+                {/* Corner brackets */}
+                <div className="login-corner login-corner--tl" />
+                <div className="login-corner login-corner--tr" />
+                <div className="login-corner login-corner--bl" />
+                <div className="login-corner login-corner--br" />
+
+                {/* Secure Login Badge */}
+                <div style={{ textAlign: 'center' }}>
+                    <span style={{
+                        display: 'inline-block',
+                        fontSize: '10px',
+                        letterSpacing: '0.2em',
+                        color: 'var(--success)',
+                        textTransform: 'uppercase',
+                        border: '1px solid color-mix(in srgb, var(--success) 30%, transparent)',
+                        borderRadius: '9999px',
+                        padding: '4px 12px',
+                        marginBottom: '16px',
+                    }}>
+                        ● Secure Login
+                    </span>
+                </div>
+
                 {/* Logo and Branding */}
                 <div style={{
                     display: 'flex',
@@ -59,8 +82,8 @@ export default function LoginPage() {
                     marginBottom: '32px',
                 }}>
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 2C13.2 2 11 4.2 11 7v4H9c-1.1 0-2 .9-2 2v13c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V13c0-1.1-.9-2-2-2h-2V7c0-2.8-2.2-5-5-5zm0 2c1.7 0 3 1.3 3 3v4h-6V7c0-1.7 1.3-3 3-3z" fill="#1D4ED8"/>
-                        <circle cx="21" cy="21" r="8" fill="#3B82F6"/>
+                        <path d="M16 2C13.2 2 11 4.2 11 7v4H9c-1.1 0-2 .9-2 2v13c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V13c0-1.1-.9-2-2-2h-2V7c0-2.8-2.2-5-5-5zm0 2c1.7 0 3 1.3 3 3v4h-6V7c0-1.7 1.3-3 3-3z" fill="var(--primary)"/>
+                        <circle cx="21" cy="21" r="8" fill="var(--primary-light)"/>
                         <path d="M21 17v5m0 2h.01" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
                     <span style={{
@@ -99,7 +122,7 @@ export default function LoginPage() {
                         padding: '12px 16px',
                         background: 'var(--danger-light)',
                         color: 'var(--danger)',
-                        borderRadius: 'var(--radius-md)',
+                        borderRadius: '10px',
                         fontSize: '14px',
                         marginBottom: '24px',
                         fontFamily: 'var(--font-body)',
@@ -129,16 +152,6 @@ export default function LoginPage() {
                             placeholder="Enter your username"
                             className="input-field"
                             autoComplete="username"
-                            style={{
-                                outline: 'none',
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.outline = '2px solid var(--primary-light)';
-                                e.target.style.outlineOffset = '0px';
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.outline = 'none';
-                            }}
                         />
                     </div>
 
@@ -162,17 +175,7 @@ export default function LoginPage() {
                                 placeholder="Enter your password"
                                 className="input-field"
                                 autoComplete="current-password"
-                                style={{
-                                    outline: 'none',
-                                    paddingRight: '44px',
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.outline = '2px solid var(--primary-light)';
-                                    e.target.style.outlineOffset = '0px';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.outline = 'none';
-                                }}
+                                style={{ paddingRight: '44px' }}
                             />
                             <button
                                 type="button"
@@ -192,13 +195,6 @@ export default function LoginPage() {
                                     justifyContent: 'center',
                                     outline: 'none',
                                 }}
-                                onFocus={(e) => {
-                                    e.target.style.outline = '2px solid var(--primary-light)';
-                                    e.target.style.borderRadius = 'var(--radius-sm)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.outline = 'none';
-                                }}
                             >
                                 {showPassword ? <HiEyeSlash size={20} /> : <HiEye size={20} />}
                             </button>
@@ -208,22 +204,8 @@ export default function LoginPage() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="btn-primary"
+                        className="login-btn"
                         disabled={loading}
-                        style={{
-                            width: '100%',
-                            marginTop: '8px',
-                            outline: 'none',
-                        }}
-                        onFocus={(e) => {
-                            if (!loading) {
-                                e.target.style.outline = '2px solid var(--primary-light)';
-                                e.target.style.outlineOffset = '2px';
-                            }
-                        }}
-                        onBlur={(e) => {
-                            e.target.style.outline = 'none';
-                        }}
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
@@ -246,14 +228,6 @@ export default function LoginPage() {
                                 color: 'var(--primary)',
                                 textDecoration: 'none',
                                 fontWeight: '600',
-                                outline: 'none',
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.outline = '2px solid var(--primary-light)';
-                                e.target.style.borderRadius = 'var(--radius-sm)';
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.outline = 'none';
                             }}
                         >
                             Sign up

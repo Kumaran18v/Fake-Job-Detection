@@ -7,15 +7,17 @@ from sklearn.metrics import (
 )
 
 
-def evaluate_model(y_true, y_pred, model_name="Model"):
-    """Evaluate a model and return metrics dict + print report."""
+def evaluate_model(y_true, y_pred, model_name="Model", average="weighted"):
+    """Evaluate predictions and return metrics dict + print report."""
     metrics = {
         "model": model_name,
         "accuracy": round(accuracy_score(y_true, y_pred), 4),
-        "precision": round(precision_score(y_true, y_pred, zero_division=0), 4),
-        "recall": round(recall_score(y_true, y_pred, zero_division=0), 4),
-        "f1_score": round(f1_score(y_true, y_pred, zero_division=0), 4),
+        "precision": round(precision_score(y_true, y_pred, average=average, zero_division=0), 4),
+        "recall": round(recall_score(y_true, y_pred, average=average, zero_division=0), 4),
+        "f1_score": round(f1_score(y_true, y_pred, average=average, zero_division=0), 4),
     }
+    conf_matrix = confusion_matrix(y_true, y_pred).tolist()
+    metrics["confusion_matrix"] = conf_matrix
     
     print(f"\n{'='*50}")
     print(f"  {model_name} Evaluation")
@@ -27,9 +29,35 @@ def evaluate_model(y_true, y_pred, model_name="Model"):
     print(f"\nClassification Report:")
     print(classification_report(y_true, y_pred, target_names=["Real", "Fake"]))
     print(f"Confusion Matrix:")
-    print(confusion_matrix(y_true, y_pred))
+    print(conf_matrix)
     
     return metrics
+
+
+def evaluate_train_test(y_train, y_train_pred, y_test, y_test_pred, model_name="Model"):
+    """Evaluate train/test split and diagnose fitting behavior."""
+    train_accuracy = round(accuracy_score(y_train, y_train_pred), 4)
+    test_metrics = evaluate_model(y_test, y_test_pred, model_name=model_name, average="weighted")
+    test_accuracy = test_metrics["accuracy"]
+    accuracy_gap = round(train_accuracy - test_accuracy, 4)
+
+    if accuracy_gap > 0.10:
+        diagnosis = "overfitting"
+    elif train_accuracy < 0.80 and test_accuracy < 0.80:
+        diagnosis = "underfitting"
+    else:
+        diagnosis = "balanced_or_good_fit"
+
+    print(f"Train Accuracy: {train_accuracy}")
+    print(f"Test Accuracy:  {test_accuracy}")
+    print(f"Accuracy Gap:   {accuracy_gap}")
+    print(f"Fit Diagnosis:  {diagnosis}")
+
+    test_metrics["train_accuracy"] = train_accuracy
+    test_metrics["test_accuracy"] = test_accuracy
+    test_metrics["accuracy_gap"] = accuracy_gap
+    test_metrics["fit_diagnosis"] = diagnosis
+    return test_metrics
 
 
 def compare_models(results):

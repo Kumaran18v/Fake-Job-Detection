@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
@@ -11,13 +12,27 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const handleSessionExpired = () => {
+    setUser(null);
+    setToken(null);
+    clearStoredAuth();
+    toast.error('Session expired. Please log in again.');
+    setTimeout(() => {
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }, 2000);
+  };
+
   useEffect(() => {
     // Restore session from localStorage
     const savedToken = localStorage.getItem('jobcheck_token');
     const savedUser = localStorage.getItem('jobcheck_user');
-    if (savedToken && savedUser) {
+    if (savedToken && savedUser && !isTokenExpired(savedToken)) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
+    } else if (savedToken) {
+      clearStoredAuth();
     }
     setLoading(false);
   }, []);
@@ -35,6 +50,7 @@ export function AuthProvider({ children }) {
     const data = await res.json();
     setToken(data.access_token);
     setUser(data.user);
+    localStorage.setItem('token', data.access_token);
     localStorage.setItem('jobcheck_token', data.access_token);
     localStorage.setItem('jobcheck_user', JSON.stringify(data.user));
     return data;
@@ -53,6 +69,7 @@ export function AuthProvider({ children }) {
     const data = await res.json();
     setToken(data.access_token);
     setUser(data.user);
+    localStorage.setItem('token', data.access_token);
     localStorage.setItem('jobcheck_token', data.access_token);
     localStorage.setItem('jobcheck_user', JSON.stringify(data.user));
     return data;
@@ -61,19 +78,27 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('jobcheck_token');
-    localStorage.removeItem('jobcheck_user');
+    clearStoredAuth();
   };
 
   const authFetch = async (url, options = {}) => {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
+    if (token && isTokenExpired(token)) {
+      handleSessionExpired();
+      throw new Error('Session expired. Please log in again.');
+    }
+    const headers = { ...options.headers };
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    if (!isFormData && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    return fetch(`${API_URL}${url}`, { ...options, headers });
+    const response = await fetch(`${API_URL}${url}`, { ...options, headers });
+    if (response.status === 401) {
+      handleSessionExpired();
+    }
+    return response;
   };
 
   return (
@@ -87,4 +112,20 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+}
+
+function clearStoredAuth() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('jobcheck_token');
+  localStorage.removeItem('jobcheck_user');
+}
+
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] || ''));
+    if (!payload?.exp) return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
 }

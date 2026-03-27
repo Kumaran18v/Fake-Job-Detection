@@ -3,10 +3,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
-import { HiShieldCheck, HiCheck } from 'react-icons/hi2';
+import { HiShieldCheck } from 'react-icons/hi2';
 
 /* ── Animated circular confidence meter ── */
-function ConfidenceMeter({ value = 94, size = 140 }) {
+function ConfidenceMeter({ value = 94, size = 80 }) {
   const [progress, setProgress] = useState(0);
   const [mounted, setMounted] = useState(false);
   const ref = useRef(null);
@@ -33,17 +33,17 @@ function ConfidenceMeter({ value = 94, size = 140 }) {
     return () => cancelAnimationFrame(raf);
   }, [inView, value, mounted]);
 
-  const r = (size - 14) / 2;
+  const r = (size - 10) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (progress / 100) * circ;
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: size, height: size }}>
+    <div ref={ref} style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
         <circle cx={size / 2} cy={size / 2} r={r}
-          stroke="var(--bg-muted)" strokeWidth="10" fill="none" />
+          stroke="var(--bg-muted)" strokeWidth="6" fill="none" />
         <circle cx={size / 2} cy={size / 2} r={r}
-          stroke="var(--success)" strokeWidth="10" fill="none"
+          stroke="var(--success)" strokeWidth="6" fill="none"
           strokeDasharray={circ} strokeDashoffset={offset}
           strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.3s ease' }} />
@@ -54,12 +54,12 @@ function ConfidenceMeter({ value = 94, size = 140 }) {
       }}>
         <span style={{
           fontFamily: 'var(--font-mono)', fontWeight: 600,
-          fontSize: '1.75rem', color: 'var(--text-primary)', lineHeight: 1,
+          fontSize: '0.875rem', color: 'var(--text-primary)', lineHeight: 1,
         }}>{progress}%</span>
         <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: '0.65rem',
-          color: 'var(--text-muted)', marginTop: 4,
-        }}>CONFIDENCE</span>
+          fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+          color: 'var(--text-muted)', lineHeight: 1, marginTop: 2,
+        }}>CONF.</span>
       </div>
     </div>
   );
@@ -129,22 +129,91 @@ const trustItems = [
   { icon: '🛡️', text: 'No data stored for guests' },
 ];
 
+const heroPhrases = [
+  'Verify before you hire',
+  'Check before you select',
+  'Screen before you proceed',
+  "Validate, don't complicate",
+  'Spot the fake, raise the stake',
+];
+
+function RotatingHeadline() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % heroPhrases.length);
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <span style={{ display: 'inline-block', minHeight: '1.25em' }}>
+      <motion.span
+        key={heroPhrases[index]}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        style={{ display: 'inline-block' }}
+      >
+        {heroPhrases[index]}
+      </motion.span>
+    </span>
+  );
+}
+
 export default function HeroSection() {
   return (
     <section
       id="hero"
       style={{
-        minHeight: 'calc(100vh - 64px)',
+        position: 'relative',
+        minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         padding: 'clamp(24px, 4vw, 48px) clamp(16px, 4vw, 40px)',
-        background: 'linear-gradient(180deg, var(--bg-white) 0%, var(--bg-primary) 100%)',
+        backgroundImage: "url('https://assets.mixkit.co/videos/4809/4809-thumb-720-0.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        overflow: 'hidden',
       }}
     >
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster="https://assets.mixkit.co/videos/4809/4809-thumb-720-0.jpg"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          pointerEvents: 'none',
+          willChange: 'transform',
+        }}
+      >
+        <source src="https://assets.mixkit.co/videos/4809/4809-1080.mp4" type="video/mp4" />
+      </video>
+
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.55)',
+        zIndex: 1,
+      }} />
+
       <div style={{
         maxWidth: 1200, margin: '0 auto', width: '100%',
         display: 'flex', alignItems: 'center', gap: 'clamp(32px, 4vw, 64px)',
         flexWrap: 'wrap',
+        position: 'relative',
+        zIndex: 2,
       }}>
         {/* Left column */}
         <div style={{ flex: '1 1 480px', minWidth: 0 }}>
@@ -156,12 +225,13 @@ export default function HeroSection() {
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '6px 14px', borderRadius: 'var(--radius-xl)',
-              background: 'var(--primary-lighter)', marginBottom: 20,
+              background: 'rgba(255, 255, 255, 0.14)', marginBottom: 20,
+              border: '1px solid rgba(255, 255, 255, 0.26)',
             }}>
-              <HiShieldCheck style={{ color: 'var(--primary)', fontSize: '1rem' }} />
+              <HiShieldCheck style={{ color: '#93C5FD', fontSize: '1rem' }} />
               <span style={{
                 fontFamily: 'var(--font-body)', fontSize: '0.82rem',
-                fontWeight: 600, color: 'var(--primary)',
+                fontWeight: 600, color: '#DBEAFE',
               }}>AI-Powered Job Verification</span>
             </div>
           </motion.div>
@@ -176,12 +246,13 @@ export default function HeroSection() {
               fontWeight: 800,
               lineHeight: 1.12,
               letterSpacing: '-0.025em',
-              color: 'var(--text-primary)',
+              color: '#F8FAFC',
               marginBottom: 16,
               maxWidth: 540,
+              textShadow: '0 3px 12px rgba(0,0,0,0.35)',
             }}
           >
-            Protect your hiring pipeline from fake job postings
+            <RotatingHeadline />
           </motion.h1>
 
           <motion.p
@@ -192,7 +263,7 @@ export default function HeroSection() {
               fontFamily: 'var(--font-body)',
               fontSize: 'clamp(1rem, 1.5vw, 1.12rem)',
               lineHeight: 1.6,
-              color: 'var(--text-secondary)',
+              color: 'rgba(241, 245, 249, 0.92)',
               maxWidth: 480,
               marginBottom: 28,
             }}
@@ -216,6 +287,9 @@ export default function HeroSection() {
             <a href="#features" className="btn-outline" style={{
               textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '13px 28px', fontSize: '0.95rem',
+              color: '#F8FAFC',
+              borderColor: 'rgba(255, 255, 255, 0.55)',
+              background: 'rgba(15, 23, 42, 0.25)',
             }}>
               See Demo
             </a>
@@ -232,7 +306,7 @@ export default function HeroSection() {
               <div key={item.text} style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 fontFamily: 'var(--font-body)', fontSize: '0.82rem',
-                color: 'var(--text-muted)',
+                color: 'rgba(226, 232, 240, 0.9)',
               }}>
                 <span style={{ fontSize: '0.9rem' }}>{item.icon}</span>
                 {item.text}
@@ -256,18 +330,18 @@ export default function HeroSection() {
           {/* Verdict card mockup with confidence meter */}
           <div style={{
             background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-lg)', padding: '20px 28px',
-            display: 'flex', alignItems: 'center', gap: 20,
+            boxShadow: 'var(--shadow-lg)', padding: '16px 24px',
+            display: 'flex', alignItems: 'center', gap: 16,
             border: '1px solid var(--border-light)',
-            width: '100%', maxWidth: 340,
+            width: '100%', maxWidth: 340, minWidth: 220,
           }}>
-            <ConfidenceMeter value={94} size={80} />
-            <div>
+            <ConfidenceMeter value={94} size={64} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{
                 display: 'inline-block', padding: '4px 10px',
                 background: 'var(--success-light)', borderRadius: 'var(--radius-sm)',
                 fontFamily: 'var(--font-mono)', fontSize: '0.72rem',
-                fontWeight: 600, color: 'var(--success)', marginBottom: 6,
+                fontWeight: 600, color: 'var(--success)',
               }}>LEGITIMATE</div>
               <div style={{
                 fontFamily: 'var(--font-body)', fontSize: '0.82rem',

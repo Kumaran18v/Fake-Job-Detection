@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -24,8 +25,8 @@ export default function Navbar() {
 
     const navLinks = [
         { href: '/', label: 'Home' },
-        { href: '/analyze', label: 'Analyze' },
         ...(user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
+        { href: '/analyze', label: 'Analyze' },
         ...(user?.role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
     ];
 
@@ -89,21 +90,14 @@ export default function Navbar() {
                 <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
                 <button
                     onClick={toggle}
-                    style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '0.85rem',
-                        fontWeight: 500,
-                        color: 'var(--text-secondary)',
-                        background: 'var(--bg-subtle)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                    }}
-                    aria-label="Toggle dark mode"
+                    className="theme-toggle-btn"
+                    aria-label={mounted && theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
-                    {mounted ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : '\u00A0'}
+                    {mounted ? (theme === 'dark' ? (
+                        <Sun size={16} style={{ color: 'var(--warning)' }} />
+                    ) : (
+                        <Moon size={16} style={{ color: 'var(--primary)' }} />
+                    )) : null}
                 </button>
 
                 {user ? (

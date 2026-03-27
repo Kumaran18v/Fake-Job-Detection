@@ -15,16 +15,16 @@ import joblib
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
 
 # Add parent dir to path so we can import sibling modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ml.preprocess import preprocess_text, combine_text_features
-from ml.evaluate import evaluate_model, compare_models
+from ml.evaluate import evaluate_train_test
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -178,67 +178,96 @@ def train_pipeline():
     y = df['fraudulent']
     
     # 3. Split
-    print("\n[3/5] Splitting data (80/20)...")
+    print("\n[3/6] Splitting data (80/20, stratified)...")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
     print(f"  Train: {len(X_train)}, Test: {len(X_test)}")
+    print(f"  Train class distribution:\n{y_train.value_counts(normalize=True).round(4)}")
     
-    # 4. TF-IDF Vectorization
-    print("\n[4/5] TF-IDF Vectorization...")
-    tfidf = TfidfVectorizer(max_features=10000, ngram_range=(1, 2), min_df=2)
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_test_tfidf = tfidf.transform(X_test)
-    print(f"  Vocabulary size: {len(tfidf.vocabulary_)}")
-    
-    # 5. Train models
-    print("\n[5/5] Training models...")
-    
-    models = {
-        "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced'),
-        "Random Forest": RandomForestClassifier(n_estimators=200, random_state=42, class_weight='balanced'),
-        "Gradient Boosting": GradientBoostingClassifier(n_estimators=150, random_state=42),
+    # 4. Build pipeline + tune
+    print("\n[4/6] Building pipeline...")
+    pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer()),
+        ("clf", LogisticRegression(random_state=42, class_weight='balanced'))
+    ])
+
+    param_distributions = {
+        "tfidf__max_features": [5000, 10000, 15000],
+        "tfidf__ngram_range": [(1, 1), (1, 2), (1, 3)],
+        "tfidf__min_df": [2, 5],
+        "tfidf__max_df": [0.9, 0.95, 1.0],
+        "tfidf__sublinear_tf": [True],
+        "tfidf__strip_accents": ["unicode", None],
+        "tfidf__lowercase": [True],
+        "tfidf__stop_words": ["english", None],
+        "clf__C": [0.1, 0.5, 1.0, 2.0, 5.0],
+        "clf__solver": ["liblinear", "lbfgs"],
+        "clf__max_iter": [1000, 2000, 3000]
     }
-    
-    results = []
-    trained_models = {}
-    
-    for name, model in models.items():
-        print(f"\n  Training {name}...")
-        model.fit(X_train_tfidf, y_train)
-        y_pred = model.predict(X_test_tfidf)
-        metrics = evaluate_model(y_test, y_pred, name)
-        results.append(metrics)
-        trained_models[name] = model
-    
-    # 6. Select best model
-    best = compare_models(results)
-    best_model = trained_models[best['model']]
-    
-    # 7. Save model artifacts
+
+    print("\n[5/6] Running RandomizedSearchCV (cv=5)...")
+    search = RandomizedSearchCV(
+        estimator=pipeline,
+        param_distributions=param_distributions,
+        n_iter=30,
+        scoring="f1_weighted",
+        cv=5,
+        n_jobs=-1,
+        random_state=42,
+        verbose=1
+    )
+    search.fit(X_train, y_train)
+
+    best_pipeline = search.best_estimator_
+    print(f"  Best CV weighted F1: {search.best_score_:.4f}")
+    print(f"  Best params: {search.best_params_}")
+
+    # 5. Evaluate tuned model
+    print("\n[6/6] Evaluating tuned model...")
+    y_train_pred = best_pipeline.predict(X_train)
+    y_test_pred = best_pipeline.predict(X_test)
+    best = evaluate_train_test(
+        y_train,
+        y_train_pred,
+        y_test,
+        y_test_pred,
+        model_name="Logistic Regression (Tuned)"
+    )
+
+    # 6. Save model artifacts
     os.makedirs(MODEL_DIR, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    version = f"v1_{timestamp}"
+    version = f"v2_{timestamp}"
     
     model_path = os.path.join(MODEL_DIR, 'best_model.pkl')
     tfidf_path = os.path.join(MODEL_DIR, 'tfidf_vectorizer.pkl')
     meta_path = os.path.join(MODEL_DIR, 'model_metadata.json')
-    
+    tfidf = best_pipeline.named_steps["tfidf"]
+    best_model = best_pipeline.named_steps["clf"]
+
     joblib.dump(best_model, model_path)
     joblib.dump(tfidf, tfidf_path)
     
     from datetime import timezone
     metadata = {
         "version": version,
-        "model_name": best['model'],
+        "model_name": "Logistic Regression",
         "accuracy": best['accuracy'],
         "precision": best['precision'],
         "recall": best['recall'],
         "f1_score": best['f1_score'],
+        "train_accuracy": best["train_accuracy"],
+        "test_accuracy": best["test_accuracy"],
+        "accuracy_gap": best["accuracy_gap"],
+        "fit_diagnosis": best["fit_diagnosis"],
         "trained_at": datetime.now(timezone.utc).isoformat(),
+        "retrain_date": datetime.now(timezone.utc).isoformat(),
         "dataset_size": len(df),
-        "features": "TF-IDF (max_features=10000, ngram_range=(1,2))",
-        "all_results": results
+        "features": "TF-IDF + LogisticRegression",
+        "best_params": search.best_params_,
+        "cv_f1_weighted": round(float(search.best_score_), 4),
+        "confusion_matrix": best["confusion_matrix"]
     }
     
     with open(meta_path, 'w') as f:

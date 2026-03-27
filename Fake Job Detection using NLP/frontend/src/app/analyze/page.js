@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { FileText, Link2, Table, Image, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 /* ─── Utility: format ISO date ─── */
 function formatLocalTime(isoString) {
@@ -24,15 +25,15 @@ const SAMPLE_TEXTS = [
 ];
 
 const RISK_COLORS = {
-    'Financial Red Flag': { bg: '#e6394620', border: '#e63946', icon: '💰' },
-    'Urgency Pressure': { bg: '#ff990020', border: '#ff9900', icon: '⚡' },
-    'Identity Harvesting': { bg: '#ff006020', border: '#ff0060', icon: '🎣' },
-    'Vague Description': { bg: '#a855f720', border: '#a855f7', icon: '🔍' },
-    'Suspicious Pattern': { bg: '#64748b20', border: '#64748b', icon: '⚠' },
+    'Financial Red Flag': { bg: 'rgba(239,68,68,0.12)', border: 'var(--danger)', icon: '💰' },
+    'Urgency Pressure': { bg: 'rgba(249,115,22,0.12)', border: 'var(--warning)', icon: '⚡' },
+    'Identity Harvesting': { bg: 'rgba(239,68,68,0.10)', border: 'var(--danger)', icon: '🎣' },
+    'Vague Description': { bg: 'rgba(29,78,216,0.10)', border: 'var(--primary)', icon: '🔍' },
+    'Suspicious Pattern': { bg: 'rgba(148,163,184,0.15)', border: 'var(--text-muted)', icon: '⚠' },
 };
 
 export default function AnalyzePage() {
-    const { user, token } = useAuth();
+    const { user, token, authFetch } = useAuth();
     // ─── Single analysis state ───
     const [inputMode, setInputMode] = useState('text'); // text | url | csv | image
     const [jobText, setJobText] = useState('');
@@ -61,9 +62,7 @@ export default function AnalyzePage() {
 
     const fetchMyHistory = async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/my-predictions`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await authFetch('/api/my-predictions');
             if (res.ok) { const data = await res.json(); setMyHistory(data.predictions || []); }
         } catch (err) { console.error('Failed to fetch history:', err); }
     };
@@ -82,13 +81,10 @@ export default function AnalyzePage() {
         }, 150);
 
         try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-
-            const endpoint = isUrl ? `${process.env.NEXT_PUBLIC_API_URL}/api/predict-url` : `${process.env.NEXT_PUBLIC_API_URL}/api/predict`;
+            const endpoint = isUrl ? '/api/predict-url' : '/api/predict';
             const body = isUrl ? { url: input } : { job_text: input };
-
-            const res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+            const req = { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } };
+            const res = token ? await authFetch(endpoint, req) : await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, req);
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || 'Analysis failed');
 
@@ -101,7 +97,7 @@ export default function AnalyzePage() {
             }, 600);
         } catch (err) {
             clearInterval(scanInterval); setLoading(false); setPhase('input');
-            alert(err.message);
+            toast.error(err.message || 'Analysis failed');
         }
     };
 
@@ -119,9 +115,9 @@ export default function AnalyzePage() {
             const formData = new FormData();
             formData.append('file', csvFile);
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/predict-bulk`, {
+            const res = await authFetch('/api/predict-bulk', {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {},
                 body: formData,
             });
             const data = await res.json();
@@ -134,7 +130,7 @@ export default function AnalyzePage() {
             }, 400);
         } catch (err) {
             clearInterval(scanInterval); setLoading(false); setPhase('input');
-            alert(err.message);
+            toast.error(err.message || 'Bulk analysis failed');
         }
     };
 
@@ -151,12 +147,8 @@ export default function AnalyzePage() {
         try {
             const formData = new FormData();
             formData.append('file', imageFile);
-            const headers = {};
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/predict-image`, {
-                method: 'POST', headers, body: formData,
-            });
+            const req = { method: 'POST', body: formData, headers: {} };
+            const res = token ? await authFetch('/api/predict-image', req) : await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/predict-image`, req);
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || 'Image analysis failed');
 
@@ -167,7 +159,7 @@ export default function AnalyzePage() {
             }, 600);
         } catch (err) {
             clearInterval(scanInterval); setLoading(false); setPhase('input');
-            alert(err.message);
+            toast.error(err.message || 'Image analysis failed');
         }
     };
 
@@ -176,9 +168,9 @@ export default function AnalyzePage() {
         try {
             const formData = new FormData();
             formData.append('file', csvFile);
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/predict-bulk/download`, {
+            const res = await authFetch('/api/predict-bulk/download', {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {},
                 body: formData,
             });
             const blob = await res.blob();
@@ -186,7 +178,7 @@ export default function AnalyzePage() {
             const a = document.createElement('a');
             a.href = url; a.download = 'bulk_results.csv'; a.click();
             URL.revokeObjectURL(url);
-        } catch { alert('Download failed'); }
+        } catch { toast.error('Download failed'); }
     };
 
     /* ─── Company verification ─── */
@@ -208,9 +200,9 @@ export default function AnalyzePage() {
     const submitFeedback = async (feedback) => {
         if (!result?.prediction_id || !token) return;
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback`, {
+            const res = await authFetch('/api/feedback', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prediction_id: result.prediction_id, feedback }),
             });
             if (res.ok) setFeedbackGiven(feedback);
@@ -238,7 +230,7 @@ export default function AnalyzePage() {
                         fontFamily: 'var(--font-display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)',
                         color: 'var(--text-primary)', lineHeight: 0.95, marginBottom: 16,
                     }}>
-                        SCAN ANY<br />JOB POST<span style={{ color: '#1D4ED8' }}>.</span>
+                        SCAN ANY<br />JOB POST<span style={{ color: 'var(--primary)' }}>.</span>
                     </h1>
                     <p style={{
                         fontFamily: 'var(--font-body)', fontWeight: 400, fontSize: '0.95rem',
@@ -247,7 +239,7 @@ export default function AnalyzePage() {
                         Paste text, enter a URL, or upload a CSV for batch analysis. Our NLP engine scans for scam patterns, deceptive language, and structural red flags.
                         {!user && (
                             <span style={{ display: 'block', marginTop: 10, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                                <a href="/login" style={{ color: '#10B981', textDecoration: 'none', borderBottom: '1px solid #10B981' }}>Sign in</a> to save history and use bulk analysis.
+                                <a href="/login" style={{ color: 'var(--success)', textDecoration: 'none', borderBottom: '1px solid var(--success)' }}>Sign in</a> to save history and use bulk analysis.
                             </span>
                         )}
                     </p>
@@ -344,9 +336,9 @@ export default function AnalyzePage() {
                     {inputMode === 'csv' && (
                         <div>
                             {!token && (
-                                <div style={{ padding: '14px 20px', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.05)', borderRadius: 10, marginBottom: 20 }}>
-                                    <span className="mono" style={{ fontSize: '0.7rem', color: '#EF4444' }}>
-                                        ⚠ You must <a href="/login" style={{ color: '#10B981', textDecoration: 'underline' }}>sign in</a> to use bulk analysis.
+                                <div style={{ padding: '14px 20px', border: '1px solid var(--danger)', background: 'var(--danger-light)', borderRadius: 10, marginBottom: 20 }}>
+                                    <span className="mono" style={{ fontSize: '0.7rem', color: 'var(--danger)' }}>
+                                        ⚠ You must <a href="/login" style={{ color: 'var(--success)', textDecoration: 'underline' }}>sign in</a> to use bulk analysis.
                                     </span>
                                 </div>
                             )}
@@ -357,8 +349,8 @@ export default function AnalyzePage() {
                                 onClick={() => document.getElementById('csvInput')?.click()}
                                 className="analyze-dropzone"
                                 style={{
-                                    border: `2px dashed ${dragOver ? '#10B981' : 'var(--border)'}`,
-                                    background: dragOver ? 'rgba(16,185,129,0.05)' : 'var(--bg-white)',
+                                    border: `2px dashed ${dragOver ? 'var(--success)' : 'var(--border)'}`,
+                                    background: dragOver ? 'var(--success-light)' : 'var(--bg-white)',
                                     padding: '60px 40px', textAlign: 'center', cursor: 'pointer',
                                 }}
                             >
@@ -526,9 +518,9 @@ export default function AnalyzePage() {
                                         {companyVerify && (
                                             <span style={{
                                                 fontSize: '0.6rem', padding: '2px 8px', borderRadius: 2, fontFamily: 'var(--font-mono)',
-                                                background: companyVerify.verified ? '#10b98120' : '#ef444420',
-                                                color: companyVerify.verified ? '#10b981' : '#ef4444',
-                                                border: `1px solid ${companyVerify.verified ? '#10b98140' : '#ef444440'}`,
+                                                background: companyVerify.verified ? 'var(--success-light)' : 'var(--danger-light)',
+                                                color: companyVerify.verified ? 'var(--success)' : 'var(--danger)',
+                                                border: `1px solid ${companyVerify.verified ? 'var(--success)' : 'var(--danger)'}`,
                                             }}>
                                                 {companyVerify.verified ? '✓ VERIFIED' : '✗ UNVERIFIED'}
                                             </span>
@@ -577,7 +569,7 @@ export default function AnalyzePage() {
                             {result.model_b_result && (
                                 <div style={{ padding: '10px 16px', background: '#e0f2fe10', border: '1px solid #e0f2fe30' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                        <span className="mono" style={{ fontSize: '0.55rem', color: '#38bdf8' }}>🔍 MODEL A/B TEST ACTIVE</span>
+                                        <span className="mono" style={{ fontSize: '0.55rem', color: 'var(--primary-light)' }}>🔍 MODEL A/B TEST ACTIVE</span>
                                         <span className="mono" style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>Comparison</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -638,7 +630,7 @@ export default function AnalyzePage() {
                                     flex: 1, padding: '10px 14px', background: 'var(--bg-white)', border: '1.5px solid var(--border)',
                                     borderRadius: '10px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)',
                                     fontSize: '0.75rem', outline: 'none', transition: 'all 0.2s',
-                                }} onFocus={e => { e.target.style.borderColor = '#0d9488'; e.target.style.boxShadow = '0 0 0 3px rgba(13,148,136,0.15)'; }}
+                                }} onFocus={e => { e.target.style.borderColor = 'var(--success)'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.15)'; }}
                                    onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
                                    onKeyDown={e => { if (e.key === 'Enter') verifyCompany(e.target.value); }} />
                                 <button className="btn-outline" style={{ fontSize: '0.6rem', padding: '10px 16px' }} disabled={companyLoading}
@@ -648,9 +640,9 @@ export default function AnalyzePage() {
                                 {companyVerify && (
                                     <span style={{
                                         fontSize: '0.6rem', padding: '4px 10px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
-                                        background: companyVerify.verified ? '#10b98120' : '#ef444420',
-                                        color: companyVerify.verified ? '#10b981' : '#ef4444',
-                                        border: `1px solid ${companyVerify.verified ? '#10b98140' : '#ef444440'}`,
+                                        background: companyVerify.verified ? 'var(--success-light)' : 'var(--danger-light)',
+                                        color: companyVerify.verified ? 'var(--success)' : 'var(--danger)',
+                                        border: `1px solid ${companyVerify.verified ? 'var(--success)' : 'var(--danger)'}`,
                                     }}>
                                         {companyVerify.verified ? `✓ ${companyVerify.match_type.toUpperCase()} MATCH (${companyVerify.confidence}%)` : '✗ NOT FOUND'}
                                     </span>
@@ -681,9 +673,9 @@ export default function AnalyzePage() {
                                 {feedbackGiven ? (
                                     <span className="mono" style={{
                                         fontSize: '0.6rem', padding: '4px 12px',
-                                        background: feedbackGiven === 'agree' ? '#10b98120' : '#ef444420',
-                                        color: feedbackGiven === 'agree' ? '#10b981' : '#ef4444',
-                                        border: `1px solid ${feedbackGiven === 'agree' ? '#10b98140' : '#ef444440'}`,
+                                        background: feedbackGiven === 'agree' ? 'var(--success-light)' : 'var(--danger-light)',
+                                        color: feedbackGiven === 'agree' ? 'var(--success)' : 'var(--danger)',
+                                        border: `1px solid ${feedbackGiven === 'agree' ? 'var(--success)' : 'var(--danger)'}`,
                                     }}>
                                         {feedbackGiven === 'agree' ? '✓ AGREED' : '✗ DISAGREED'} — THANKS!
                                     </span>
@@ -691,14 +683,14 @@ export default function AnalyzePage() {
                                     <>
                                         <button onClick={() => submitFeedback('agree')} style={{
                                             padding: '6px 16px', fontSize: '0.65rem', fontFamily: 'var(--font-mono)',
-                                            background: '#10b98120', color: '#10b981', border: '1px solid #10b98140',
+                                            background: 'var(--success-light)', color: 'var(--success)', border: '1px solid var(--success)',
                                             cursor: 'pointer', letterSpacing: '0.06em', transition: 'all 0.2s',
-                                        }} onMouseEnter={e => e.target.style.background = '#10b98140'} onMouseLeave={e => e.target.style.background = '#10b98120'}>✓ AGREE</button>
+                                        }} onMouseEnter={e => e.target.style.background = 'rgba(16,185,129,0.2)'} onMouseLeave={e => e.target.style.background = 'var(--success-light)'}>✓ AGREE</button>
                                         <button onClick={() => submitFeedback('disagree')} style={{
                                             padding: '6px 16px', fontSize: '0.65rem', fontFamily: 'var(--font-mono)',
-                                            background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440',
+                                            background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid var(--danger)',
                                             cursor: 'pointer', letterSpacing: '0.06em', transition: 'all 0.2s',
-                                        }} onMouseEnter={e => e.target.style.background = '#ef444440'} onMouseLeave={e => e.target.style.background = '#ef444420'}>✗ DISAGREE</button>
+                                        }} onMouseEnter={e => e.target.style.background = 'rgba(239,68,68,0.2)'} onMouseLeave={e => e.target.style.background = 'var(--danger-light)'}>✗ DISAGREE</button>
                                     </>
                                 )}
                             </div>
@@ -710,12 +702,12 @@ export default function AnalyzePage() {
                             {result.prediction === 'Fake' && token && (
                                 <button className="btn-outline" onClick={async () => {
                                     try {
-                                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/flag`, {
-                                            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                        await authFetch('/api/flag', {
+                                            method: 'POST', headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ prediction_id: result.prediction_id, reason: 'Flagged by user review' })
                                         });
-                                        alert('Post flagged for review.');
-                                    } catch { alert('Failed to flag.'); }
+                                        toast.success('Post flagged for review.');
+                                    } catch { toast.error('Failed to flag.'); }
                                 }}>⚑ FLAG FOR REVIEW</button>
                             )}
                         </div>
@@ -806,7 +798,7 @@ export default function AnalyzePage() {
                                 <div>
                                     <span className={row.prediction === 'Fake' ? 'tag-red' : row.prediction === 'Real' ? 'tag-teal' : ''} style={{
                                         fontSize: '0.55rem', padding: '2px 8px',
-                                        ...(row.prediction === 'Skipped' ? { background: '#64748b20', color: '#64748b', border: '1px solid #64748b40' } : {}),
+                                        ...(row.prediction === 'Skipped' ? { background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)', border: '1px solid var(--border)' } : {}),
                                     }}>
                                         {row.prediction === 'Fake' ? 'FRAUD' : row.prediction === 'Real' ? 'LEGIT' : 'SKIP'}
                                     </span>

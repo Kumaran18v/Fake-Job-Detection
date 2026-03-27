@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import {
     AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -120,6 +121,12 @@ const customTooltip = ({ active, payload, label }) => {
 
 const axisStyle = { fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--text-muted)' };
 const gridStyle = { stroke: 'var(--border)', strokeDasharray: '3 3' };
+const toPercent = (value, digits = 1) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    const pct = n <= 1 ? n * 100 : n;
+    return pct.toFixed(digits);
+};
 
 export default function AdminPage() {
     const { user, authFetch } = useAuth();
@@ -168,10 +175,10 @@ export default function AdminPage() {
         setRetraining(true);
         try {
             await authFetch('/api/retrain', { method: 'POST' });
-            alert('Model retrained successfully.');
+            toast.success('Model retrained successfully.');
             fetchData();
         } catch (err) {
-            alert('Retrain failed: ' + err.message);
+            toast.error('Retrain failed: ' + err.message);
         } finally {
             setRetraining(false);
         }
@@ -233,7 +240,7 @@ export default function AdminPage() {
                     ['Fraud Detected', stats.fraud_count || stats.total_fake || 0],
                     ['Verified Legit', stats.legit_count || stats.total_real || 0],
                     ['Fraud Rate', `${stats.fraud_rate || 0}%`],
-                    ['Model Accuracy', stats.accuracy ? `${(stats.accuracy * 100).toFixed(1)}%` : '—'],
+                    ['Model Accuracy', modelAccuracyPct !== null ? `${modelAccuracyPct}%` : '—'],
                 ];
 
                 pdf.autoTable({
@@ -287,7 +294,7 @@ export default function AdminPage() {
             pdf.save(`admin_dashboard_${new Date().toISOString().slice(0, 10)}.pdf`);
         } catch (err) {
             console.error('PDF export failed:', err);
-            alert('PDF export failed. Check console.');
+            toast.error('PDF export failed. Check console.');
         } finally {
             setExportingPDF(false);
         }
@@ -367,20 +374,47 @@ export default function AdminPage() {
     }
 
     // Derived data
+    const modelInfo = stats?.model_info || {};
+    const modelAccuracyPct = toPercent(
+        stats?.accuracy ?? stats?.model_accuracy ?? modelInfo?.accuracy ?? modelInfo?.test_accuracy
+    );
+    const avgConfidencePct = toPercent(
+        stats?.avg_confidence ?? modelInfo?.avg_confidence
+    );
+
     const pieData = stats ? [
         { name: 'Fraud', value: stats.fraud_count || stats.total_fake || 0 },
         { name: 'Legit', value: stats.legit_count || stats.total_real || 0 },
     ] : [];
 
-    const trendData = stats?.daily_trend || [];
+    const trendData = (stats?.daily_trend || []).map((entry) => ({
+        ...entry,
+        fraud: entry.fraud ?? entry.fake ?? 0,
+        legit: entry.legit ?? entry.real ?? 0,
+    }));
 
-    const modelCompData = stats?.model_comparison?.map(r => ({
-        name: r.model?.replace('Regression', 'Reg.').replace('Gradient Boosting', 'GB').substring(0, 12),
-        Accuracy: Math.round((r.accuracy || 0) * 100),
-        Precision: Math.round((r.precision || 0) * 100),
-        Recall: Math.round((r.recall || 0) * 100),
-        F1: Math.round((r.f1 || 0) * 100),
-    })) || [];
+    const modelCompData = Array.isArray(stats?.model_comparison) && stats.model_comparison.length > 0
+        ? stats.model_comparison.map(r => ({
+            name: r.model?.replace('Regression', 'Reg.').replace('Gradient Boosting', 'GB').substring(0, 12),
+            Accuracy: Number(toPercent(r.accuracy, 0) || 0),
+            Precision: Number(toPercent(r.precision, 0) || 0),
+            Recall: Number(toPercent(r.recall, 0) || 0),
+            F1: Number(toPercent(r.f1, 0) || 0),
+        }))
+        : (Number.isFinite(Number(modelInfo?.accuracy)) ||
+            Number.isFinite(Number(modelInfo?.precision)) ||
+            Number.isFinite(Number(modelInfo?.recall)))
+            ? [{
+                name: (modelInfo?.model_name || 'Current Model')
+                    .replace('Regression', 'Reg.')
+                    .replace('Gradient Boosting', 'GB')
+                    .substring(0, 12),
+                Accuracy: Number(toPercent(modelInfo?.accuracy, 0) || 0),
+                Precision: Number(toPercent(modelInfo?.precision, 0) || 0),
+                Recall: Number(toPercent(modelInfo?.recall, 0) || 0),
+                F1: Number(toPercent(modelInfo?.f1_score ?? modelInfo?.f1, 0) || 0),
+            }]
+            : [];
 
     const confBuckets = { '0-20%': 0, '20-40%': 0, '40-60%': 0, '60-80%': 0, '80-100%': 0 };
     predictions.forEach(p => {
@@ -578,8 +612,8 @@ export default function AdminPage() {
                         <StatCard
                             icon="🎯"
                             label="Model Accuracy"
-                            value={stats?.accuracy ? `${(stats.accuracy * 100).toFixed(0)}%` : '—'}
-                            subtitle={stats?.avg_confidence ? `${stats.avg_confidence}% avg conf.` : ''}
+                            value={modelAccuracyPct !== null ? `${Number(modelAccuracyPct).toFixed(0)}%` : '—'}
+                            subtitle={avgConfidencePct !== null ? `${avgConfidencePct}% avg conf.` : ''}
                         />
                     </div>
 
